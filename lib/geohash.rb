@@ -1,9 +1,14 @@
 =begin
 geohash.rb
+Pure ruby GeoHashing library, updated and cleaned up by Justin Hart @ Ibotta.com
+
+
+Based on:
+https://github.com/masuidrive/pr_geohash
 Geohash library for pure ruby
 Distributed under the MIT License
 
-Based library is 
+Based on:
 // http://github.com/davetroy/geohash-js/blob/master/geohash.js
 // geohash.js
 // Geohash library for Javascript
@@ -12,13 +17,15 @@ Based library is
 =end
 
 module GeoHash
-  VERSION = "0.0.1"
-  
-  #########
-  # Decode from geohash
-  # 
-  # geohash:: geohash code
-  # return:: decoded bounding box [[north latitude, west longitude],[south latitude, east longitude]]
+  VERSION = "0.1"
+
+  # Decode bounding box from geohash string
+  #
+  # == Parameters:
+  # geohash:: geohash string
+  #
+  # == Returns:
+  # decoded bounding box [[north latitude, west longitude],[south latitude, east longitude]]
   def decode(geohash)
     latlng = [[-90.0, 90.0], [-180.0, 180.0]]
     is_lng = 1
@@ -31,14 +38,21 @@ module GeoHash
     latlng.transpose
   end
   module_function :decode
-  
-  #########
+
   # Encode latitude and longitude into geohash
+  #
+  # == Parameters:
+  # latitude:: float latitude point
+  # longitude:: float longitude point
+  # precision:: number of characters as precision
+  #
+  # == Returns:
+  # encoded geohash string
   def encode(latitude, longitude, precision=12)
     latlng = [latitude, longitude]
     points = [[-90.0, 90.0], [-180.0, 180.0]]
     is_lng = 1
-    (0...precision).map {
+    (0...precision).map do
       ch = 0
       5.times do |bit|
         mid = (points[is_lng][0] + points[is_lng][1]) / 2
@@ -47,22 +61,33 @@ module GeoHash
         is_lng ^= 1
       end
       BASE32[ch,1]
-    }.join
+    end.join
   end
   module_function :encode
-  
-  #########
-  # Calculate neighbors (8 adjacents) geohash
+
+  # Calculate each 8 direction neighbors as geohash
+  #
+  # == Parameters:
+  # geohash:: string center geohash
+  #
+  # == Returns:
+  # array of neighbors from top clockwise (top, topright, right...)
   def neighbors(geohash)
-    [[:top, :right], [:right, :bottom], [:bottom, :left], [:left, :top]].map{ |dirs|
+    [[:top, :right], [:right, :bottom], [:bottom, :left], [:left, :top]].map do |dirs|
       point = adjacent(geohash, dirs[0])
       [point, adjacent(point, dirs[1])]
-    }.flatten
+    end.flatten
   end
   module_function :neighbors
-  
-  #########
-  # Calculate adjacents geohash
+
+  # calculate one adjacent neighbor
+  #
+  # == Parameters:
+  # geohash:: string origin geohash
+  # dir:: which direction to get a geohash of (only top, right, bottom, left)
+  #
+  # == Returns:
+  # string geohash of neighbor
   def adjacent(geohash, dir)
     if geohash == ''
       geohash
@@ -76,7 +101,7 @@ module GeoHash
     end
   end
   module_function :adjacent
-  
+
   BITS = [0x10, 0x08, 0x04, 0x02, 0x01].freeze
   BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz".freeze
 
@@ -86,7 +111,7 @@ module GeoHash
     :top    => { :even => "p0r21436x8zb9dcf5h7kjnmqesgutwvy", :odd => "bc01fg45238967deuvhjyznpkmstqrwx" },
     :bottom => { :even => "14365h7k9dcfesgujnmqp0r2twvyx8zb", :odd => "238967debc01fg45kmstqrwxuvhjyznp" }
   }.freeze
-  
+
   BORDERS = {
     :right  => { :even => "bcfguvyz", :odd => "prxz" },
     :left   => { :even => "0145hjnp", :odd => "028b" },
