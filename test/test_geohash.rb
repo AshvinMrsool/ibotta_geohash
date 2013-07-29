@@ -1,4 +1,4 @@
-require 'pr_geohash'
+require 'geohash'
 require 'test/unit'
 
 class PrGeoHashTests < Test::Unit::TestCase

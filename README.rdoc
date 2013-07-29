@@ -1,7 +1,7 @@
-= pr_geohash
+= ibotta_geohash
 
+Based wholely on the MIT licensed pr_geohash by Yuichiro Masui
 * http://github.com/masuidrive/pr_geohash
-
 
 == DESCRIPTION:
 
@@ -19,8 +19,7 @@ It's implementation of http://en.wikipedia.org/wiki/Geohash
 
 == SYNOPSIS:
 
-  require "rubyforge"
-  require "pr_geohash"
+  require "geohash"
   
   #########
   # Encode latitude and longitude into geohash
@@ -58,10 +57,11 @@ It's implementation of http://en.wikipedia.org/wiki/Geohash
 
 == INSTALL:
 
-* sudo gem install pr_geohash
+* clone repo
+* sudo gem install ibotta_geohash
 
 
-== LICENSE:
+== original LICENSE:
 
 (The MIT License)
 
@@ -88,6 +88,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 === Based library is
+
+http://github.com/masuidrive/pr_geohash
 
 http://github.com/davetroy/geohash-js/blob/master/geohash.js
 
