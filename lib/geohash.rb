@@ -25,7 +25,7 @@ module GeoHash
   # geohash:: geohash string
   #
   # == Returns:
-  # decoded bounding box [[north latitude, west longitude],[south latitude, east longitude]]
+  # decoded bounding box [[south latitude, west longitude],[north latitude, east longitude]]
   def decode(geohash)
     latlng = [[-90.0, 90.0], [-180.0, 180.0]]
     is_lng = 1
