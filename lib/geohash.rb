@@ -16,6 +16,13 @@ Based on:
 // Distributed under the MIT License
 =end
 
+# TODO YARD style
+# TODO document encode/decode
+# TODO perf test
+# TODO compare to C impl
+# TODO import boundary fixes + tests
+#
+
 module GeoHash
   VERSION = "0.1"
 
@@ -102,8 +109,92 @@ module GeoHash
   end
   module_function :adjacent
 
+  def areas_by_radius(lat, lon, radius_meters)
+    #get min/max latitude and longitude of radius around point
+    min_lat, min_lon, max_lat, max_lon = radius_box = bounding_box(lat, lon, radius_meters)
+    p radius_box
+
+    #estimate the size of boxes to target
+    steps = estimate_steps_by_radius(radius_meters)
+    #re-encode point at steps
+    hash = encode(lat, lon, steps)
+    p hash
+
+    #get neighbors of box
+    n_n, n_ne, n_e, n_se, n_s, n_sw, n_w, n_nw = nb = neighbors(hash)
+    p nb
+
+    #get original bounding box
+    s, w, n, e = area_box = decode(hash).flatten
+    p area_box
+
+    if s < min_lat
+      #area already covers south bounds of target
+      nb.delete(n_se)
+      nb.delete(n_s)
+      nb.delete(n_sw)
+    end
+    if n > max_lat
+      #already covers north bounds of target
+      nb.delete(n_ne)
+      nb.delete(n_n)
+      nb.delete(n_nw)
+    end
+    if w < min_lon
+      #already covers west bounds of target
+      nb.delete(n_nw)
+      nb.delete(n_w)
+      nb.delete(n_sw)
+    end
+    if e > max_lon
+      #already covers east bounds of target
+      nb.delete(n_ne)
+      nb.delete(n_e)
+      nb.delete(n_se)
+    end
+
+    #add center hash
+    nb.unshift(hash)
+
+    #return remaining neighbor list
+    nb
+  end
+  module_function :areas_by_radius
+
+  def estimate_steps_by_radius(radius_meters)
+    step = 1
+    v = radius_meters
+    while v < MERCATOR.max
+      v *= 2
+      step += 1
+    end
+    step -= 1
+    step
+  end
+  module_function :estimate_steps_by_radius
+
+  def bounding_box(lat, lon, radius_meters)
+    radius_meters  = radius_meters.to_f
+    delta_lat = radius_meters / (111320.0 * Math.cos(lat))
+    delta_lon = radius_meters / 110540.0
+    [
+      lat - delta_lat,
+      lon - delta_lon,
+      lat + delta_lat,
+      lon + delta_lon
+    ]
+  end
+  module_function :bounding_box
+
   BITS = [0x10, 0x08, 0x04, 0x02, 0x01].freeze
   BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz".freeze
+
+  MERCATOR = (-20037726.37..20037726.37).freeze
+  WGS84_LAT = (-85.05113..85.05113).freeze
+  WGS84_LON = (-180.0..180.0).freeze
+  EARTH_RADIUS_IN_METERS = 6372797.560856
+  DEG_TO_RAD = Math::PI / 180.0
+  RAD_TO_DEG = 180.0 / Math::PI
 
   NEIGHBORS = {
     :right  => { :even => "bc01fg45238967deuvhjyznpkmstqrwx", :odd => "p0r21436x8zb9dcf5h7kjnmqesgutwvy" },

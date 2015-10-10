@@ -12,7 +12,7 @@ class PrGeoHashTests < Test::Unit::TestCase
       assert_equal GeoHash.decode(hash), latlng
     end
   end
-  
+
   def test_encode
     {
       [ 45.37,      -121.7      ] => 'c216ne',
@@ -24,7 +24,7 @@ class PrGeoHashTests < Test::Unit::TestCase
       assert_equal GeoHash.encode(latlng[0], latlng[1], hash.length), hash
     end
   end
-  
+
   def test_neighbors
     {
       'dqcw5' => ["dqcw7", "dqctg", "dqcw4", "dqcwh", "dqcw6", "dqcwk", "dqctf", "dqctu"],
@@ -35,7 +35,7 @@ class PrGeoHashTests < Test::Unit::TestCase
       assert_equal GeoHash.neighbors(geohash).sort, neighbors.sort
     end
   end
-  
+
   def test_adjacent
     {
       ["dqcjq", :top]    => 'dqcjw',
@@ -46,4 +46,11 @@ class PrGeoHashTests < Test::Unit::TestCase
       assert_equal GeoHash.adjacent(*position), hash
     end
   end
+
+  def test_area
+    p area = GeoHash.areas_by_radius(45.37, -121.7, 50)
+    p "----------"
+    p area = GeoHash.areas_by_radius(45.37, -121.7, 50_000)
+  end
+
 end
