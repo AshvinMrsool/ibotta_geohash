@@ -51,18 +51,24 @@ module IbottaGeohash
     #decode bounding box from geohash string
     # @todo  reorder bounds?
     # @todo  see if faster way (less array access?)
-    # @todo  see if split() faster than scan()
     # @param [String] geohash string
     # @return [Array<Array>] decoded bounding box [[south latitude, west longitude],[north latitude, east longitude]]
     def decode(geohash)
+      #starting bounding box (as if entire world)
       latlng = [[-90.0, 90.0], [-180.0, 180.0]]
+      #alternate lat/long (starting at long)
       is_lng = 1
-      geohash.downcase.scan(/./) do |c|
+      geohash.downcase.each_char do |c|
         BITS.each do |mask|
-          latlng[is_lng][(BASE32.index(c) & mask)==0 ? 1 : 0] = (latlng[is_lng][0] + latlng[is_lng][1]) / 2
+          #working on low or high bits?
+          lowhigh = (BASE32.index(c) & mask) == 0 ? 1 : 0
+          #calculate as half of current box
+          latlng[is_lng][lowhigh] = (latlng[is_lng][0] + latlng[is_lng][1]) / 2
+          #flip longitude bits
           is_lng ^= 1
         end
       end
+      #transpose to low, high lat/long
       latlng.transpose
     end
 
@@ -72,6 +78,7 @@ module IbottaGeohash
     # @return [Array<Float>] latitude, longitude of center
     def decode_center(geohash)
       res = decode(geohash)
+      #get center of each set
       [((res[0][0] + res[1][0]) / 2), ((res[0][1] + res[1][1]) / 2)]
     end
 
@@ -83,16 +90,26 @@ module IbottaGeohash
     # @return [String] encoded
     def encode(latitude, longitude, precision=12)
       latlng = [latitude, longitude]
+      #start at whole world
       points = [[-90.0, 90.0], [-180.0, 180.0]]
+      #alternate lat/long (starting at long)
       is_lng = 1
+      #for each character
       (0...precision).map do
+        #character value is ch
         ch = 0
         5.times do |bit|
+          #get midpoints of current calculation
           mid = (points[is_lng][0] + points[is_lng][1]) / 2
-          points[is_lng][latlng[is_lng] > mid ? 0 : 1] = mid
-          ch |=  BITS[bit] if latlng[is_lng] > mid
+          #min or max value
+          minmax = latlng[is_lng] > mid ? 0 : 1
+          points[is_lng][minmax] = mid
+          #add bits to character
+          ch |= BITS[bit] if latlng[is_lng] > mid
+          #flip bits
           is_lng ^= 1
         end
+        #map value to character
         BASE32[ch,1]
       end.join
     end
@@ -101,6 +118,7 @@ module IbottaGeohash
     # @param [String] geohash
     # @return [Array<String>] neighbors in clockwise (top, topright, right, ...). Invalid regions at the poles are excluded
     def neighbors(geohash)
+      #get all adjacencies (going around)
       [[:top, :right], [:right, :bottom], [:bottom, :left], [:left, :top]].map do |dirs|
         point = adjacent(geohash, dirs[0])
         [point, adjacent(point, dirs[1])]
@@ -112,9 +130,12 @@ module IbottaGeohash
     # @param [Symbol] dir which direction (top, right, bottom left)
     # @return [String] neighbor in that direction (or nil if invalid)
     def adjacent(geohash, dir)
+      #stop recursion if empty
       return if geohash.nil? || geohash.empty?
+      #get last character
       base, lastChr = geohash[0..-2], geohash[-1,1]
       type = (geohash.length % 2)==1 ? :odd : :even
+      #if bit is border, get adjacency of base hash
       if BORDERS[dir][type].include?(lastChr)
         base = adjacent(base, dir)
         if base.nil?
@@ -122,6 +143,7 @@ module IbottaGeohash
           base = ''
         end
       end
+      #add back new neighbor character
       base + BASE32[NEIGHBORS[dir][type].index(lastChr),1]
     end
 

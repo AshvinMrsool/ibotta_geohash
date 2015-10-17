@@ -17,6 +17,21 @@ describe IbottaGeohash do
         expect(IbottaGeohash.decode(hash)).to eq latlng
       end
     end
+    it 'random fuzz' do
+      1024.times do
+        len = rand(1..12)
+        hash = len.times.map { IbottaGeohash::BASE32.each_char.to_a.sample(1) }.join("")
+        s, w, n, e = IbottaGeohash.decode(hash).flatten
+
+        expect(s).to be_between(-90, 90)
+        expect(n).to be_between(-90, 90)
+        expect(s < n).to eq true
+
+        expect(w).to be_between(-180, 180)
+        expect(e).to be_between(-180, 180)
+        expect(w < e).to eq true
+      end
+    end
   end
 
   describe :identity do
@@ -26,7 +41,14 @@ describe IbottaGeohash do
         expect(IbottaGeohash.encode(*dec, hash.size)).to eq hash
       end
     end
-    it 'random fuzz'
+    it 'random fuzz' do
+      1024.times do
+        len = rand(1..12)
+        hash = len.times.map { IbottaGeohash::BASE32.each_char.to_a.sample(1) }.join("")
+        dec = IbottaGeohash.decode_center(hash)
+        expect(IbottaGeohash.encode(*dec, hash.size)).to eq hash
+      end
+    end
   end
 
   describe :encode do
@@ -43,7 +65,14 @@ describe IbottaGeohash do
         expect(IbottaGeohash.encode(latlng[0], latlng[1], hash.length)).to eq hash
       end
     end
-    it 'random fuzz'
+    it 'random fuzz' do
+      1024.times do
+        len = rand(1..12)
+        lat = rand(-90.0..90.0)
+        lng = rand(-180.0..180.0)
+        expect(IbottaGeohash.encode(lat, lng, len).size).to eq len
+      end
+    end
   end
 
   describe :neighbors do
@@ -82,6 +111,15 @@ describe IbottaGeohash do
         expect(IbottaGeohash.neighbors(hash)).to match_array neighbors
       end
     end
+    it 'random' do
+      1024.times do
+        len = rand(1..12)
+        hash = len.times.map { IbottaGeohash::BASE32.each_char.to_a.sample(1) }.join("")
+        ns = IbottaGeohash.neighbors(hash)
+        expect(ns).to_not include(hash)
+        expect(ns.size > 2).to eq true #todo what is min neighbors anyway? 5?
+      end
+    end
   end
 
   describe :adjacent do
@@ -95,7 +133,15 @@ describe IbottaGeohash do
         expect(IbottaGeohash.adjacent(*position)).to eq hash
       end
     end
-    it 'random fuzz'
+    it 'random' do
+      1024.times do
+        len = rand(1..12)
+        hash = len.times.map { IbottaGeohash::BASE32.each_char.to_a.sample(1) }.join("")
+        dir = IbottaGeohash::NEIGHBORS.keys.sample(1).first
+        adj = IbottaGeohash.adjacent(hash, dir)
+        #random here is hard because it has to be somewhat valid. for now, just ensure it doesnt barf
+      end
+    end
   end
 
   describe :areas_by_radius do
@@ -104,6 +150,14 @@ describe IbottaGeohash do
       p "----------"
       p area = IbottaGeohash.areas_by_radius(45.37, -121.7, 50_000)
     end
-    it 'random fuzz'
+    it 'random' do
+      1024.times do
+        lat = rand(-90.0..90.0)
+        lng = rand(-180.0..180.0)
+        radius = rand(100..100_000)
+        ns = IbottaGeohash.areas_by_radius(lat,lng,radius)
+        expect(ns).to_not be_empty
+      end
+    end
   end
 end
