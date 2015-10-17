@@ -21,16 +21,22 @@ require 'ibotta_geohash/version'
 #
 module IbottaGeohash
 
+  #needed for geohash encoding
   BITS = [0x10, 0x08, 0x04, 0x02, 0x01].freeze
   BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz".freeze
 
+  #not sure min is needed
   MERCATOR = (-20037726.37..20037726.37).freeze
-  WGS84_LAT = (-85.05113..85.05113).freeze
-  WGS84_LON = (-180.0..180.0).freeze
 
-  # EARTH_RADIUS_IN_METERS = 6372797.560856
-  # DEG_TO_RAD = Math::PI / 180.0
-  # RAD_TO_DEG = 180.0 / Math::PI
+  #not sure what these are needed by?
+  # WGS84_LAT = (-85.05113..85.05113).freeze
+  # WGS84_LON = (-180.0..180.0).freeze
+
+  #needed for bounding box calculations
+  EARTH_RADIUS_IN_METERS = 6372797.560856
+  DEG_LAT_IN_METERS = 2 * Math::PI * EARTH_RADIUS_IN_METERS / 360
+  DEG_TO_RAD = Math::PI / 180.0
+  RAD_TO_DEG = 180.0 / Math::PI
 
   NEIGHBORS = {
     :right  => { :even => "bc01fg45238967deuvhjyznpkmstqrwx", :odd => "p0r21436x8zb9dcf5h7kjnmqesgutwvy" },
@@ -213,7 +219,10 @@ module IbottaGeohash
       step
     end
 
-    #get bounding box around a radius (adjusted for latitude)
+    #get bounding box around a radius
+    # NOTE: this breaks down at the poles (which is fine, we stop geocoding at the poles too)
+    # NOTE: this this is not WGS84 accurate (does not take into account oblong latitude). But as this is used for
+    #   estimation anyway, thats probably fine
     # @todo  reorder return to match decode?
     # @param [Float] lat
     # @param [Float] lon
@@ -221,8 +230,8 @@ module IbottaGeohash
     # @return [Array] min_lat, min_long, max_lat, max_long
     def bounding_box(lat, lon, radius_meters)
       radius_meters  = radius_meters.to_f
-      delta_lat = radius_meters / (111320.0 * Math.cos(lat))
-      delta_lon = radius_meters / 110540.0
+      delta_lat = radius_meters / DEG_LAT_IN_METERS
+      delta_lon = radius_meters / (DEG_LAT_IN_METERS * Math.cos(lat * DEG_TO_RAD))
       [
         lat - delta_lat,
         lon - delta_lon,
