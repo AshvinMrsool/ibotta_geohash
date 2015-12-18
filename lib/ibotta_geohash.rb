@@ -164,8 +164,9 @@ module IbottaGeohash
 
       #estimate the size of boxes to target
       steps = estimate_steps_by_radius(radius_meters)
-      #re-encode point at steps
-      hash = encode(lat, lon, steps)
+      #re-encode point using steps
+      str_len = steps*2/5
+      hash = encode(lat, lon, str_len)
 
       #get neighbors of box
       n_n, n_ne, n_e, n_se, n_s, n_sw, n_w, n_nw = nb = neighbors(hash)

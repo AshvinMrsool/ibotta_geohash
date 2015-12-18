@@ -145,10 +145,11 @@ describe IbottaGeohash do
   end
 
   describe "::areas_by_radius" do
-    it 'known' do
-      p area = described_class.areas_by_radius(45.37, -121.7, 50)
-      p "----------"
-      p area = described_class.areas_by_radius(45.37, -121.7, 50_000)
+    it '50 meters' do
+      expect(described_class.areas_by_radius(45.37, -121.7, 50)).to eq(['c216nek', 'c216nem'])
+    end
+    it '50 km' do
+      expect(described_class.areas_by_radius(45.37, -121.7, 50_000)).to eq(['c21', '9rc'])
     end
     it 'random' do
       1024.times do
@@ -162,7 +163,12 @@ describe IbottaGeohash do
   end
 
   describe "::estimate_steps_by_radius" do
-    it 'known'
+    it '50 meters' do
+      expect(described_class.estimate_steps_by_radius(50)).to eq(19)
+    end
+    it '50 km' do
+      expect(described_class.estimate_steps_by_radius(50_000)).to eq(9)
+    end
     it 'random' do
       1024.times do
         steps = described_class.estimate_steps_by_radius(rand(1..900_000))
