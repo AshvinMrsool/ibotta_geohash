@@ -146,18 +146,25 @@ describe IbottaGeohash do
 
   describe "::areas_by_radius" do
     it '50 meters' do
-      expect(described_class.areas_by_radius(45.37, -121.7, 50)).to eq(['c216nek', 'c216nem'])
+      expect(described_class.areas_by_radius(45.37, -121.7, 50)).to eq(["c216nekv", "c216nemj", "c216nemh", "c216nem5", "c216nekg", "c216neke", "c216neks", "c216nekt", "c216neku", "c216nem4", "c216nekf", "c216nem1", "c216nekc", "c216nek9", "c216nekd", "c216nek3", "c216nek6", "c216nek7", "c216nekk", "c216nekm"])
     end
     it '50 km' do
-      expect(described_class.areas_by_radius(45.37, -121.7, 50_000)).to eq(['c21', '9rc'])
+      expect(described_class.areas_by_radius(45.37, -121.7, 50_000)).to eq(["c21k", "c21s", "c21e", "c21d", "c216", "c214", "c215", "c21h", "c21u", "c21g", "c21f", "c217", "c21c", "c219", "c213", "c21b", "c218", "c212", "c210", "c211"])
     end
     it 'random' do
+      count = 0
       1024.times do
         lat = rand(-90.0..90.0)
         lng = rand(-180.0..180.0)
         radius = rand(1..900_000)
-        ns = described_class.areas_by_radius(lat,lng,radius)
-        expect(ns).to_not be_empty
+        c_area = Math::PI * radius**2
+        total_area = 0
+        geohashes = described_class.areas_by_radius(lat,lng,radius)
+        geohashes.each do |geohash|
+          total_area += described_class.geohash_area(geohash)
+        end
+        # worst case scenario is when a circle is barely bigger than a square and is in the center and causes 4 other squares that border the edges of the original to be included, thus max of 5 times the total area of the circle
+        expect(total_area).to be < 5*c_area
       end
     end
   end
