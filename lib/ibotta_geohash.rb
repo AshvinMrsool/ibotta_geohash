@@ -165,42 +165,27 @@ module IbottaGeohash
       #estimate the size of boxes to target
       steps = estimate_steps_by_radius(radius_meters)
       #re-encode point using steps
-      str_len = steps*2/5
+      #the geohashes are composed of 32 distinct numbers/letters, basically base 32
+      #bits are composed of 1s and 0s, base 2 or binary
+      #steps is the length of the binary number for longitude and latitude, and the combined length of the binary string (which interleaves both the longitude and latitude) is 2*steps
+      # since 32 is 2^5, while 2 is 2^1, the length of a base 32 number will be the length of a binary number divided by 5 and plus 1 (32 base 10 = 10000 base 2 = 10 base 32).
+      str_len = steps*2/5 + 1
       hash = encode(lat, lon, str_len)
 
       #get neighbors of box
-      n_n, n_ne, n_e, n_se, n_s, n_sw, n_w, n_nw = nb = neighbors(hash)
+      neighbors = neighbors(hash)
+      neighbors_neighbors = neighbors.each_with_object([]) {|neighbor, nb| nb << neighbors(neighbor)}
 
-      #get original bounding box
-      s, w, n, e = area_box = decode(hash).flatten
+      # 25 geohashes surrounding the original
+      nb = neighbors_neighbors.flatten.uniq
 
-      if s < min_lat
-        #area already covers south bounds of target
-        nb.delete(n_se)
-        nb.delete(n_s)
-        nb.delete(n_sw)
+      # remove those geohashes that are outside the bounding box
+      nb.each do |neighbor|
+        n_latlng_low, n_latlng_high = decode(neighbor)
+        if n_latlng_low[0] > max_lat or n_latlng_low[1] > max_lon or n_latlng_high[0] < min_lat or n_latlng_high[1] < min_lon
+          nb -= [neighbor]
+        end
       end
-      if n > max_lat
-        #already covers north bounds of target
-        nb.delete(n_ne)
-        nb.delete(n_n)
-        nb.delete(n_nw)
-      end
-      if w < min_lon
-        #already covers west bounds of target
-        nb.delete(n_nw)
-        nb.delete(n_w)
-        nb.delete(n_sw)
-      end
-      if e > max_lon
-        #already covers east bounds of target
-        nb.delete(n_ne)
-        nb.delete(n_e)
-        nb.delete(n_se)
-      end
-
-      #add center hash
-      nb.unshift(hash)
 
       #return remaining neighbor list
       nb
@@ -240,6 +225,29 @@ module IbottaGeohash
         lon + delta_lon
       ]
     end
+
+    #haversine distance (distance between two coordinate points) in meters
+    def haversine_distance(lat1, lon1, lat2, lon2)
+      r = EARTH_RADIUS_IN_METERS
+      phi1 = lat1 * DEG_TO_RAD
+      phi2 = lat2 * DEG_TO_RAD
+      delta_phi= (lat2-lat1) * DEG_TO_RAD
+      delta_lambda = (lon2-lon1) * DEG_TO_RAD
+
+      a = Math.sin(delta_phi/2) ** 2 +
+          Math.cos(phi1) * Math.cos(phi2) *
+          Math.sin(delta_lambda/2) ** 2
+      c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+      d = r * c
+    end
+
+    def geohash_area(geohash)
+      latlngmin, latlngmax = decode(geohash)
+      delta_lat_meters = (latlngmax[0] - latlngmin[0]) * DEG_LAT_IN_METERS
+      delta_lng_meters = (latlngmax[1] - latlngmin[1]) * (DEG_LAT_IN_METERS * Math.cos(latlngmax[0] * DEG_TO_RAD))
+      area = delta_lat_meters * delta_lng_meters
+    end
+
   end
 
 end # module Geohash
