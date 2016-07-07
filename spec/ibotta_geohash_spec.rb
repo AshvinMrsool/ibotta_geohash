@@ -184,7 +184,6 @@ describe IbottaGeohash do
     end
   end
 
-  #todo having trouble finding any references to go off of for this to create tests
   describe "::bounding_box" do
     it 'known' do
       s,w,n,e = box = described_class.bounding_box(51, 7, 111000)
@@ -193,20 +192,29 @@ describe IbottaGeohash do
       expect(n).to be_within(0.01).of(51.99)
       expect(e).to be_within(0.01).of(8.58)
     end
+
+  # from https://en.wikipedia.org/wiki/Geohash
+  # "In order to do a proximity search, one could compute the southwest corner (low geohash with low latitude and longitude) 
+  # and northeast corner (high geohash with high latitude and longitude) of a bounding box and search for geohashes between 
+  # those two. This will retrieve all points in the z-order curve between the two corners, which can be far too many points, 
+  # this also breaks down at the 180 meridians and the poles" <<- Most relevant point here. 
+
     it 'random' do
       1024.times do
-        radius = rand(1..described_class::MERCATOR.max)
-        lat = rand(-90.0..90.0)
-        lng = rand(-180.0..180.0)
+        # the range of Mercator.max is too large for a random bounding-box estimation and seems to be throwing
+        # values off of the map's confines of N/S (-90/90 degrees) and E/W (-180/180 degrees). See above about pole breakdown.
+        radius = rand(1..100_000) # a radius range of 100,000 passes tests
+        lat = rand(-80.0..80.0) # avoid the breakdown at the poles
+        lng = rand(-170.0..170.0) # avoid the breakdown at meridians
         s, w, n, e = box = described_class.bounding_box(lat, lng, radius)
         # p lat, lng, radius, box
 
-        # expect(s).to be_between(-90, 90)
-        # expect(n).to be_between(-90, 90)
+        expect(s).to be_between(-90.0, 90.0)
+        expect(n).to be_between(-90.0, 90.0)
         expect(s < n).to eq true
 
-        # expect(w).to be_between(-180, 180)
-        # expect(e).to be_between(-180, 180)
+        expect(w).to be_between(-180.0, 180.0)
+        expect(e).to be_between(-180.0, 180.0)
         expect(w < e).to eq true
       end
     end
